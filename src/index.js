@@ -18,7 +18,7 @@ async function run(octokit, context, token) {
 	// const pr = (await octokit.pulls.get({ owner, repo, pull_number })).data;
 	try {
 		debug('pr' + JSON.stringify(context.payload, null, 2));
-	} catch (e) {}
+	} catch (e) { }
 
 	let baseSha, baseRef;
 	if (context.eventName == 'push') {
@@ -115,6 +115,10 @@ async function run(octokit, context, token) {
 		startGroup(`[base] Cleanup via ${packageManager} run ${cleanScript}`);
 		await exec(`${packageManager} run ${cleanScript}`);
 		endGroup();
+	} else {
+		startGroup(`[base] clean-lockfiles`);
+		await exec(`rm -rf package-lock.json yarn.lock`);
+		endGroup();
 	}
 
 	startGroup(`[base] Install Dependencies`);
@@ -171,9 +175,7 @@ async function run(octokit, context, token) {
 
 	const comment = {
 		...commentInfo,
-		body:
-			markdownDiff +
-			'\n\n<a href="https://github.com/preactjs/compressed-size-action"><sub>compressed-size-action</sub></a>'
+		body: markdownDiff
 	};
 
 	if (context.eventName !== 'pull_request' && context.eventName !== 'pull_request_target') {
@@ -197,7 +199,7 @@ async function run(octokit, context, token) {
 		let commentId;
 		try {
 			const comments = (await octokit.issues.listComments(commentInfo)).data;
-			for (let i = comments.length; i--; ) {
+			for (let i = comments.length; i--;) {
 				const c = comments[i];
 				if (c.user.type === 'Bot' && /<sub>[\s\n]*(compressed|gzip)-size-action/.test(c.body)) {
 					commentId = c.id;
